@@ -1,0 +1,74 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hiapi-seedance"
+description = "Python SDK for Seedance 2.5 and Seedance video generation through the HiAPI unified task API."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [{ name = "HiAPI", email = "support@hiapi.ai" }]
+keywords = [
+    "hiapi",
+    "seedance",
+    "seedance 2.5",
+    "seedance 2.5 api",
+    "seedance python sdk",
+    "text to video api",
+    "image to video api",
+    "ai video generation",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Typing :: Typed",
+]
+dependencies = []
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://www.hiapi.ai/en?utm_source=github&utm_medium=pyproject&utm_campaign=hiapi-seedance-python"
+Documentation = "https://docs.hiapi.ai/?utm_source=github&utm_medium=pyproject&utm_campaign=hiapi-seedance-python"
+Source = "https://github.com/HiAPIAI/hiapi-seedance-python"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7",
+    "mypy>=1.0",
+    "ruff>=0.1",
+]
+
+[tool.hatch.version]
+path = "src/hiapi_seedance/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hiapi_seedance"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/hiapi_seedance", "README.md", "LICENSE"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = true
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = ["src/hiapi_seedance"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
