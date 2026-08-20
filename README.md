@@ -137,8 +137,8 @@ task = client.text_to_video(
 
 Need production prompts and preview examples? Use the companion prompt library:
 
-- [Seedance 2.5 prompt library](https://github.com/HiAPIAI/awesome-seedance-2-5-prompts)
-- [Seedance 2.0 prompt library](https://github.com/HiAPIAI/awesome-seedance-2-0-prompts)
+- [Seedance 2.5 prompt library](https://github.com/HiAPIAI/awesome-ai-video-prompts)
+- [Seedance 2.0 prompt library](https://github.com/HiAPIAI/awesome-ai-video-prompts)
 
 ## Model Slug
 
