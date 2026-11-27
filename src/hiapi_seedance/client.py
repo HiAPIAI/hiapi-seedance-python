@@ -14,8 +14,11 @@ from ._version import __version__
 from .errors import APIConnectionError, APIError, PollTimeout, TaskFailed
 from .models import CreatedTask, Task
 
-DEFAULT_BASE_URL = "https://api.hiapi.ai/v1"
-DEFAULT_MODEL = "seedance-2-5"
+DEFAULT_BASE_URL = "https://api.hiapi.sh/v1"
+MODEL_TEXT_TO_VIDEO = "seedance-2.5/text-to-video"
+MODEL_IMAGE_TO_VIDEO = "seedance-2.5/image-to-video"
+MODEL_REFERENCE_TO_VIDEO = "seedance-2.5/reference-to-video"
+DEFAULT_MODEL = MODEL_TEXT_TO_VIDEO
 DEFAULT_TIMEOUT = 60.0
 DEFAULT_POLL_INTERVAL = 3.0
 DEFAULT_WAIT_TIMEOUT = 900.0
@@ -28,9 +31,13 @@ class Seedance:
 
     Args:
         api_key: HiAPI API key. Falls back to ``HIAPI_API_KEY``.
-        base_url: HiAPI base URL. Both ``https://api.hiapi.ai`` and
-            ``https://api.hiapi.ai/v1`` are accepted.
-        model: Default model slug. Defaults to ``seedance-2-5``.
+        base_url: HiAPI base URL. Falls back to ``HIAPI_BASE_URL``, then the
+            default. Both ``https://api.hiapi.sh`` and
+            ``https://api.hiapi.sh/v1`` are accepted.
+        model: Default model slug for every method. When omitted, each method
+            picks its own: ``seedance-2.5/text-to-video`` (``text_to_video``,
+            ``create``), ``seedance-2.5/image-to-video`` (``image_to_video``),
+            ``seedance-2.5/reference-to-video`` (``video_edit``).
         timeout: HTTP request timeout in seconds.
     """
 
@@ -38,15 +45,17 @@ class Seedance:
         self,
         api_key: Optional[str] = None,
         *,
-        base_url: str = DEFAULT_BASE_URL,
-        model: str = DEFAULT_MODEL,
+        base_url: Optional[str] = None,
+        model: Optional[str] = None,
         timeout: float = DEFAULT_TIMEOUT,
     ) -> None:
         key = api_key or os.environ.get("HIAPI_API_KEY")
         if not key:
             raise ValueError("missing API key: pass api_key=... or set HIAPI_API_KEY")
         self.api_key = key
-        self.base_url = _normalize_base_url(base_url)
+        self.base_url = _normalize_base_url(
+            base_url or os.environ.get("HIAPI_BASE_URL") or DEFAULT_BASE_URL
+        )
         self.model = model
         self.timeout = timeout
 
@@ -81,7 +90,7 @@ class Seedance:
         )
         return self.create(
             input=input_data,
-            model=model,
+            model=model or self.model or MODEL_TEXT_TO_VIDEO,
             callback_url=callback_url,
             wait=wait,
             poll_interval=poll_interval,
@@ -103,7 +112,11 @@ class Seedance:
         timeout: float = DEFAULT_WAIT_TIMEOUT,
         **extra: Any,
     ) -> Union[Task, CreatedTask]:
-        """Create a Seedance image-to-video task with reference images."""
+        """Create a Seedance image-to-video task with reference images.
+
+        With the default ``seedance-2.5/image-to-video`` model, ``aspect_ratio``
+        only accepts ``"adaptive"``. No client-side validation is done.
+        """
         input_data = _clean(
             {
                 "prompt": prompt,
@@ -116,7 +129,7 @@ class Seedance:
         )
         return self.create(
             input=input_data,
-            model=model,
+            model=model or self.model or MODEL_IMAGE_TO_VIDEO,
             callback_url=callback_url,
             wait=wait,
             poll_interval=poll_interval,
@@ -147,7 +160,7 @@ class Seedance:
         )
         return self.create(
             input=input_data,
-            model=model,
+            model=model or self.model or MODEL_REFERENCE_TO_VIDEO,
             callback_url=callback_url,
             wait=wait,
             poll_interval=poll_interval,
@@ -165,7 +178,7 @@ class Seedance:
         timeout: float = DEFAULT_WAIT_TIMEOUT,
     ) -> Union[Task, CreatedTask]:
         """Submit a raw HiAPI task for Seedance-compatible inputs."""
-        body: Dict[str, Any] = {"model": model or self.model, "input": input}
+        body: Dict[str, Any] = {"model": model or self.model or DEFAULT_MODEL, "input": input}
         if callback_url:
             body["callback"] = {"url": callback_url, "when": "final"}
         env = self._request("POST", "/tasks", body=body)

@@ -44,7 +44,7 @@ Set your API key:
 export HIAPI_API_KEY="sk-your-hiapi-key"
 ```
 
-Get a key at [HiAPI](https://www.hiapi.ai/en/register?utm_source=github&utm_medium=readme&utm_campaign=hiapi-seedance-python).
+Get a key at [HiAPI](https://hiapi.ai/en/sign?utm_source=github&utm_medium=readme&utm_campaign=hiapi-seedance-python).
 
 ## Text-to-Video
 
@@ -73,7 +73,7 @@ task = client.image_to_video(
     prompt="Animate the reference image with a slow push-in, drifting fabric, and warm rim light.",
     image_urls=["https://example.com/first-frame.png"],
     duration=8,
-    aspect_ratio="9:16",
+    aspect_ratio="adaptive",
 )
 ```
 
@@ -105,14 +105,14 @@ print(task.output[0].url)
 The SDK sends requests to:
 
 ```http
-POST https://api.hiapi.ai/v1/tasks
+POST https://api.hiapi.sh/v1/tasks
 Authorization: Bearer $HIAPI_API_KEY
 Content-Type: application/json
 ```
 
 ```json
 {
-  "model": "seedance-2-5",
+  "model": "seedance-2.5/text-to-video",
   "input": {
     "prompt": "A cinematic Seedance 2.5 prompt",
     "duration": 30,
@@ -142,14 +142,24 @@ Need production prompts and preview examples? Use the companion prompt library:
 
 ## Model Slug
 
-The default model is `seedance-2-5`. You can override it per client or per call:
+Seedance 2.5 is split into three model IDs. When no model is given, each method picks its own default:
+
+| Method | Default model |
+| --- | --- |
+| `text_to_video` (and `create`) | `seedance-2.5/text-to-video` |
+| `image_to_video` | `seedance-2.5/image-to-video` |
+| `video_edit` | `seedance-2.5/reference-to-video` |
+
+Passing `model=` to the constructor sets the default for every method; passing it to a call overrides both:
 
 ```python
-client = Seedance(model="seedance-2-5")
-task = client.text_to_video(prompt="...", model="seedance-2-0")
+client = Seedance(model="seedance-2.0")
+task = client.text_to_video(prompt="...", model="seedance-2.5/text-to-video")
 ```
 
-Use the fallback model while waiting for Seedance 2.5 availability on your account.
+Notes: `seedance-2.5/image-to-video` only accepts `aspect_ratio="adaptive"`, and `seedance-2.5/reference-to-video` requires `reference_video_urls`. The SDK does not validate these client-side.
+
+You can also set `HIAPI_BASE_URL` to override the base URL (an explicit `base_url=` wins).
 
 ## SEO Keywords
 
