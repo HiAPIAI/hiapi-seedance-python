@@ -9,7 +9,7 @@ OK_CREATE = (200, {"code": 200, "message": "success", "data": {"taskId": "tk-see
 
 
 def detail(status, **extra):
-    data = {"taskId": "tk-seedance", "model": "seedance-2-5", "status": status}
+    data = {"taskId": "tk-seedance", "model": "seedance-2.5/text-to-video", "status": status}
     data.update(extra)
     return (200, {"code": 200, "message": "success", "data": data})
 
@@ -38,7 +38,7 @@ def test_text_to_video_posts_seedance_task(client, server):
     assert req["path"] == "/v1/tasks"
     assert req["headers"]["Authorization"] == "Bearer sk-test"
     assert json.loads(req["body"]) == {
-        "model": "seedance-2-5",
+        "model": "seedance-2.5/text-to-video",
         "input": {
             "prompt": "A one-take product film",
             "duration": 30,
@@ -60,7 +60,7 @@ def test_image_to_video_sends_reference_images(client, server):
     )
 
     body = json.loads(server.requests[-1]["body"])
-    assert body["model"] == "seedance-2-5"
+    assert body["model"] == "seedance-2.5/image-to-video"
     assert body["input"]["prompt"] == "Animate the hero frame"
     assert body["input"]["reference_image_urls"] == [
         "https://example.com/hero.png",
@@ -125,3 +125,41 @@ def test_wait_times_out(client, server):
 
     with pytest.raises(PollTimeout):
         client.wait("tk-seedance", poll_interval=0.01, timeout=0.03)
+
+
+def test_default_model_per_method(client, server):
+    server.set_responder(lambda *a: OK_CREATE)
+
+    client.text_to_video(prompt="p", wait=False)
+    client.image_to_video(prompt="p", image_urls="https://e.com/a.png", wait=False)
+    client.video_edit(prompt="p", video_urls="https://e.com/a.mp4", wait=False)
+    client.create(input={"prompt": "p"})
+    client.text_to_video(prompt="p", model="seedance-2.0", wait=False)
+
+    models = [json.loads(r["body"])["model"] for r in server.requests]
+    assert models == [
+        "seedance-2.5/text-to-video",
+        "seedance-2.5/image-to-video",
+        "seedance-2.5/reference-to-video",
+        "seedance-2.5/text-to-video",
+        "seedance-2.0",
+    ]
+
+
+def test_constructor_model_applies_to_all_methods(server):
+    server.set_responder(lambda *a: OK_CREATE)
+    c = Seedance(api_key="sk-test", base_url=server.base_url, model="seedance-2.0")
+
+    c.image_to_video(prompt="p", image_urls="https://e.com/a.png", wait=False)
+
+    assert json.loads(server.requests[-1]["body"])["model"] == "seedance-2.0"
+
+
+def test_base_url_env_priority(monkeypatch):
+    monkeypatch.setenv("HIAPI_BASE_URL", "https://env.example.com/")
+    assert Seedance(api_key="sk").base_url == "https://env.example.com/v1"
+    assert Seedance(api_key="sk", base_url="https://arg.example.com").base_url == (
+        "https://arg.example.com/v1"
+    )
+    monkeypatch.delenv("HIAPI_BASE_URL")
+    assert Seedance(api_key="sk").base_url == "https://api.hiapi.sh/v1"
